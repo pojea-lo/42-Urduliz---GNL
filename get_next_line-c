@@ -1,0 +1,129 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: pojea-lo <pojea-lo@student.42urduli>       +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/12/13 10:15:19 by pojea-lo          #+#    #+#             */
+/*   Updated: 2021/12/16 12:30:20 by pojea-lo         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "get_next_line.h"
+
+int	main(void)
+{
+	int			fd;
+	int			j;
+	char		*line;
+
+	j = 0;
+	fd = open ("multiple_line_with_nl", O_RDWR);
+	line = "1";
+	while (line != NULL)
+	{
+		j++;
+		line = get_next_line (fd);
+		printf("\n---------%d-----------\n", j);
+		printf ("\n*-*-*-:  *-%s-*\n", line);
+	}
+	return (0);
+}
+
+char	*get_next_line(int fd)
+{
+	char		*buf;
+	char		*s;
+	static char	*rest;
+	int			bread;
+
+	bread = 1;
+	if (fd == -1 || BUFFER_SIZE <= 0)
+		return (NULL);
+	buf = (char *) malloc (sizeof(char) * (BUFFER_SIZE + 1));//malloc para el bufer de lectura
+	if (buf == NULL)
+		return (NULL);
+	while (ft_strchr (rest, '\n') != 1 && bread != 0)//bucle de lectura, entra a leer mieentras no haya \n en el resto y no haya terminado de leer
+	{
+		bread = read (fd, buf, BUFFER_SIZE);
+		buf[bread] = '\0';
+		if (bread == -1)//por si la lectura da error
+		{
+			free (buf);
+			return (NULL);
+		}
+		rest = ft_join (rest, buf);//meto en la estática todo lo leido
+	}
+	s = ft_line(rest, buf, bread);//llamo a la funcion para sacar las lineas de la estática
+	rest = ft_updrest(rest, bread);//actualizo el resto sin la linea extraida
+	return (s);
+}
+
+char	*ft_line(char *rest, char *buf, int bread)//funcion paa extraer la linea
+{
+	int		i;
+	char	*s;
+
+	free (buf);//libero el malloc del buf
+	i = 0;
+	if (*rest != '\0' || bread != 0)//condicion para terminar el programa, si la estática es nula y ha terminado de ller devuelvo null, si no sacamela linea
+	{
+		while (rest[i] != '\0')
+		{
+			if (rest[i] == '\n')//condicion para encontrar la posicion del \n
+			{
+				i++;
+				s = ft_substr (rest, 0, i);//esta s son las lineas intermedias
+				return (s);
+			}
+			i++;
+		}
+		s = ft_substr (rest, 0, i);//esta s sería la ultima linea del archivo leido
+	}
+	else
+		s = NULL;
+	return (s);
+}
+
+char	*ft_updrest(char *rest, int bread)//funcion para actualizar la estática
+{
+	char	*des;
+	size_t	i;
+
+	i = 0;
+	if (*rest != '\0' || bread != 0)//condición para terminar el programa, al igual que en la funcion de la linea
+	{
+		while (rest[i] != '\n' && rest[i] != '\0')//en este bucle localizo \n y \0
+			i++;
+		if (rest[i] == '\0')//si es \0 libero la estática y devuelvo null
+		{
+			free(rest);
+			return (NULL);
+		}
+		else
+			des = ft_copyrest(rest, i);//actualizo la estática nueva
+		free (rest);//libero la estática de la que he partido para actualizarla, llamemosle estática vieja
+	}
+	else
+	{
+		free (rest);
+		return (0);
+	}
+	return (des);//devuelvo la estática actualizada
+}
+
+char	*ft_copyrest(char *rest, size_t i)//esta es la funcion para quitar la linea sacada y actualizar la estática
+{
+	char	*des;
+	int		j;
+
+	j = 0;
+	des = (char *)malloc (sizeof(char) * (ft_strlen(rest) - i + 1));
+	if (!des)
+		return (NULL);
+	while (i++ < (size_t) ft_strlen(rest))
+		des[j++] = rest[i];
+	des[j] = '\0';
+	return (des);
+}
